@@ -109,7 +109,7 @@
 	}
 
 	.is-premium & {
-		border-bottom: 2px solid var( --color-success );
+		border-bottom: 2px solid $alert-green;
 	}
 
 	.is-business & {
