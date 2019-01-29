@@ -52,11 +52,11 @@
 		background-color: var( --color-success );
 	}
 	.ribbon__title::before {
-		border-left-color: darken( $alert-green, 20% );
-		border-top-color: darken( $alert-green, 20% );
+		border-left-color: var( --color-success-600 );
+		border-top-color: var( --color-success-600 );
 	}
 	.ribbon__title::after {
-		border-right-color: darken( $alert-green, 20% );
-		border-top-color: darken( $alert-green, 20% );
+		border-right-color: var( --color-success-600 );
+		border-top-color: var( --color-success-600 );
 	}
 }
