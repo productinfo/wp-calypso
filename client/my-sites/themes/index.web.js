@@ -4,7 +4,7 @@
  * Internal dependencies
  */
 import userFactory from 'lib/user';
-import { makeLayout } from 'controller';
+import { makeLayout, redirectLoggedOut } from 'controller';
 import { navigation, siteSelection, sites } from 'my-sites/controller';
 import { loggedIn, loggedOut, upload, fetchThemeFilters } from './controller';
 import { validateFilters, validateVertical } from './validate-filters';
@@ -17,16 +17,28 @@ export default function( router ) {
 		'|' + // or
 		'[^\\\\/.]+\\.[^\\\\/]+'; // one-or-more non-slash-or-dot chars, then a dot, then one-or-more non-slashes
 
-	if ( isLoggedIn ) {
-		router( '/themes/upload', siteSelection, sites, makeLayout );
-		router( '/themes/upload/:site_id?', siteSelection, upload, navigation, makeLayout );
+	const loggedOutRoutes = [
+		'/themes/:tier(free|premium)?',
+		'/themes/:tier(free|premium)?/filter/:filter',
+		'/themes/:vertical?/:tier(free|premium)?',
+		'/themes/:vertical?/:tier(free|premium)?/filter/:filter',
+	];
 
-		const loggedInRoutes = [
-			`/themes/:tier(free|premium)?/:site_id(${ siteId })?`,
-			`/themes/:tier(free|premium)?/filter/:filter/:site_id(${ siteId })?`,
-			`/themes/:vertical?/:tier(free|premium)?/:site_id(${ siteId })?`,
-			`/themes/:vertical?/:tier(free|premium)?/filter/:filter/:site_id(${ siteId })?`,
-		];
+	// logged-in routes have an optional '/:site_id?' suffix at the end
+	const loggedInRoutes = loggedOutRoutes.map( route => `${ route }/:site_id(${ siteId })?` );
+
+	// Upload routes are valid only when logged in. In logged-out sessions they redirect to login page.
+	router( '/themes/upload', redirectLoggedOut, siteSelection, sites, makeLayout );
+	router(
+		'/themes/upload/:site_id',
+		redirectLoggedOut,
+		siteSelection,
+		upload,
+		navigation,
+		makeLayout
+	);
+
+	if ( isLoggedIn ) {
 		router(
 			loggedInRoutes,
 			fetchThemeFilters,
@@ -38,16 +50,6 @@ export default function( router ) {
 			makeLayout
 		);
 	} else {
-		// No uploads when logged-out, so redirect to main showcase page
-		router( '/themes/upload', '/themes' );
-		router( '/themes/upload/*', '/themes' );
-
-		const loggedOutRoutes = [
-			'/themes/:tier(free|premium)?',
-			'/themes/:tier(free|premium)?/filter/:filter',
-			'/themes/:vertical?/:tier(free|premium)?',
-			'/themes/:vertical?/:tier(free|premium)?/filter/:filter',
-		];
 		router(
 			loggedOutRoutes,
 			fetchThemeFilters,
@@ -56,5 +58,10 @@ export default function( router ) {
 			loggedOut,
 			makeLayout
 		);
+
+		// If a logged-in route is hit in a logged-out session, it means it has a ':site_id' suffix.
+		// Otherwise it would be captured and handled by an earlier logged-out handler.
+		// Let's redirect these routes to the login page.
+		router( loggedInRoutes, redirectLoggedOut );
 	}
 }
